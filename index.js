@@ -16,17 +16,9 @@ const main = async () => {
   await exec(`git config --local user.name "${bot.name}"`);
   await exec(`git add ${path}`);
 
-  const { execSync } = require("child_process");
-  const changed = execSync("git diff --cached --name-only").toString().includes(path);
-  core.info(`Staged file changed: ${changed}`);
+  await exec(`git commit -m "${message}"`);
+  await exec(`git push`);
 
-  if (changed) {
-    await exec(`git commit -m "${message}"`);
-    await exec(`git push`);
-    core.info("Changes committed and pushed.");
-  } else {
-    core.info("No staged changes to commit.");
-  }
 
   core.setOutput("diff", diffcode !== 0);
 };
