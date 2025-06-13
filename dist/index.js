@@ -8100,46 +8100,48 @@ module.exports = /*#__PURE__*/JSON.parse('{"email":"41898282+github-actions[bot]
 var __webpack_exports__ = {};
 const core = __nccwpck_require__(6201);
 const fetch = __nccwpck_require__(284);
-const { createWriteStream } = __nccwpck_require__(9896); // 使用 createWriteStream
+const { writeFileSync } = __nccwpck_require__(9896);
 const { exec } = __nccwpck_require__(3761);
 const bot = __nccwpck_require__(1683);
 
 const main = async () => {
-  const url = core.getInput("url");
-  const path = core.getInput("path");
-  const message = core.getInput("message");
-  const headers = JSON.parse(core.getInput("headers"));
+  try {
+    const url = core.getInput("url");
+    const path = core.getInput("path");
+    const message = core.getInput("message");
 
-  // 1. 发起请求并获取响应
-  const response = await fetch(url, { headers });
+    const rawHeaders = core.getInput("headers");
+    let headers = {};
+    try {
+      headers = JSON.parse(rawHeaders);
+    } catch (err) {
+      throw new Error(`Invalid JSON in 'headers' input: ${err.message}`);
+    }
 
-  // 检查请求是否成功
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+    // 获取并格式化 JSON 响应
+    const response = await fetch(url, { headers });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+    }
+
+    const jsonData = await response.json();
+    const formattedJson = JSON.stringify(jsonData, null, 2); // 缩进 2 空格
+
+    writeFileSync(path, formattedJson);
+
+    // Git 操作
+    await exec(`git config --local user.email "${bot.email}"`);
+    await exec(`git config --local user.name "${bot.name}"`);
+    await exec(`git add ${path}`);
+    await exec(`git commit -m "${message}"`);
+    await exec(`git push`);
+  } catch (error) {
+    core.setFailed(error.message);
   }
-
-  // 2. 创建一个可写流
-  const fileStream = createWriteStream(path);
-
-  // 3. 使用管道将响应体直接写入文件
-  await new Promise((resolve, reject) => {
-    response.body.pipe(fileStream);
-    response.body.on("error", reject);
-    fileStream.on("finish", resolve);
-  });
-
-  // 后续的 git 操作保持不变
-  await exec(`git config --local user.email "${bot.email}"`);
-  await exec(`git config --local user.name "${bot.name}"`);
-  await exec(`git add ${path}`);
-  await exec(`git commit -m "${message}"`);
-  await exec(`git push`);
- 
 };
 
-main().catch((error) => {
-  core.setFailed(error.message);
-});
+main();
 
 module.exports = __webpack_exports__;
 /******/ })()
