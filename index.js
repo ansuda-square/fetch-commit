@@ -1,7 +1,7 @@
 const core = require("@actions/core");
 const fetch = require("node-fetch");
 const { createWriteStream } = require("fs"); // 使用 createWriteStream
-const { exec } = require("@actions/githube/exec");
+const { exec } = require("@actions/exec");
 const bot = require("./profile.json");
 
 const main = async () => {
