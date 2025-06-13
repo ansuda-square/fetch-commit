@@ -12,22 +12,28 @@ const main = async () => {
 
   const body = await fetch(url, { headers }).then((res) => res.text());
   await writeFile(path, JSON.stringify(body, null, 2));
-  core.info(body);
+  core.info(`Fetched and wrote content to ${path}`);
 
   await exec(`git config --local user.email "${bot.email}"`);
   await exec(`git config --local user.name "${bot.name}"`);
   await exec(`git add ${path}`);
+
   const diffcode = await exec(`git diff --cached --quiet ${path}`, undefined, {
     ignoreReturnCode: true
   });
-  if (diffcode) exec(`git commit -m "${message}"`);
-  exec(`git push`);
+  core.info(`Git diff exit code: ${diffcode}`);
 
-  core.setOutput("diff", Boolean(diffcode));
+  if (diffcode !== 0) {
+    await exec(`git commit -m "${message}"`);
+    await exec(`git push`);
+    core.info("Changes committed and pushed.");
+  } else {
+    core.info("No staged changes to commit.");
+  }
+
+  core.setOutput("diff", diffcode !== 0);
 };
 
-try {
-  main();
-} catch (error) {
+main().catch((error) => {
   core.setFailed(error.message);
-}
+});
