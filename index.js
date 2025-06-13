@@ -14,9 +14,9 @@ const main = async () => {
   await writeFile(path, JSON.stringify(body, null, 2));
   core.info(body);
 
-  exec(`git config --local user.email "${bot.email}"`);
-  exec(`git config --local user.name "${bot.name}"`);
-  exec(`git add ${path}`);
+  await exec(`git config --local user.email "${bot.email}"`);
+  await exec(`git config --local user.name "${bot.name}"`);
+  await exec(`git add ${path}`);
   const diffcode = await exec(`git diff --cached --quiet ${path}`, undefined, {
     ignoreReturnCode: true
   });
